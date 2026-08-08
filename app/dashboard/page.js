@@ -143,7 +143,11 @@ export default function Dashboard() {
           setIntegrationsByRepo((prev) => ({ ...prev, [fullName]: status.integrations }));
           if (status.status === "done") {
             stopPolling();
-            loadRepos();
+            await loadRepos();
+            // Run the check immediately once the scan finishes, so
+            // connecting a repo can surface a draft PR without a second
+            // manual click.
+            await runCheckForRepo(fullName);
           }
         } catch (err) {
           stopPolling();
@@ -175,8 +179,8 @@ export default function Dashboard() {
     }
   }
 
-  async function runCheck() {
-    if (!selectedRepoId) return;
+  async function runCheckForRepo(repoId) {
+    if (!repoId) return;
     setChecking(true);
     setCheckResults(null);
     setGlobalError(null);
@@ -184,7 +188,7 @@ export default function Dashboard() {
       const data = await apiFetch("/api/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoId: selectedRepoId }),
+        body: JSON.stringify({ repoId }),
       });
       setCheckResults(data.results);
       await Promise.all([loadChanges(), loadPrs()]);
@@ -193,6 +197,10 @@ export default function Dashboard() {
     } finally {
       setChecking(false);
     }
+  }
+
+  async function runCheck() {
+    await runCheckForRepo(selectedRepoId);
   }
 
   async function handleLogout() {
@@ -268,6 +276,7 @@ export default function Dashboard() {
             changes={changes}
             prs={prs}
             selectedRepo={selectedRepo}
+            selectedIntegrations={selectedIntegrations}
             onRunCheck={runCheck}
             checking={checking}
             checkResults={checkResults}
