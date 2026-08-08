@@ -16,7 +16,12 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${bricolage.variable} ${instrument.variable} ${jetbrains.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-mkt-bg text-mkt-text">{children}</body>
+      <body
+        className="min-h-full flex flex-col font-sans bg-mkt-bg text-mkt-text"
+        suppressHydrationWarning
+      >
+        {children}
+      </body>
     </html>
   );
 }
