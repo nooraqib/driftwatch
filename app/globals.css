@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #12161b;
+  --paper: #edf0f2;
+  --surface: #ffffff;
+  --line: #d3dae0;
+  --signal: #3b2fe8;
+  --warn: #b5651d;
+  --add: #1a7f4b;
+  --del: #b3261e;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-signal: var(--signal);
+  --color-warn: var(--warn);
+  --color-add: var(--add);
+  --color-del: var(--del);
+  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-instrument);
+  --font-mono: var(--font-jetbrains);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.instrument-grid {
+  background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -13px -13px;
+}
+
+.rail-node-mark {
+  position: relative;
+}
+
+.rail-node-mark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.rail-node-mark::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 9999px;
+  background: var(--signal);
+}
+
+@keyframes rail-node-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rail-node-enter {
+  animation: rail-node-in 600ms ease-out;
+}
