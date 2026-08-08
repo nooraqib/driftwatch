@@ -194,9 +194,9 @@ export default async function Home() {
             <Reveal delay={60}>
               <pre className="overflow-x-auto rounded-[10px] border border-mkt-line bg-mkt-surface p-5 font-mono text-xs leading-relaxed text-mkt-muted">
                 {`Stripe        14 call sites   6 files
-  lib/payments.js:5      stripe.charges.create
+  lib/payments.js:5      stripe.paymentIntents.create
   lib/payments.js:11     charge.amount_captured
-  services/billing.js:22 stripe.charges.create
+  services/billing.js:22 stripe.paymentIntents.create
 Twilio         3 call sites   2 files
   lib/notify.js:8        client.messages.create`}
               </pre>
