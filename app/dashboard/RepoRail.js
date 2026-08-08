@@ -1,9 +1,9 @@
 "use client";
 
 function statusDot(status) {
-  if (status === "scanning") return "bg-warn";
-  if (status === "done") return "bg-add";
-  return "bg-ink/20";
+  if (status === "scanning") return "bg-mkt-warn";
+  if (status === "done") return "bg-mkt-add";
+  return "bg-mkt-muted/30";
 }
 
 export default function RepoRail({ repos, integrationsByRepo, selectedRepoId, onSelect, onConnectClick, onDisconnect }) {
@@ -12,13 +12,13 @@ export default function RepoRail({ repos, integrationsByRepo, selectedRepoId, on
   return (
     <aside className="h-full">
       <div className="flex items-center justify-between px-4 py-3">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-ink/50">Repos</h2>
-        {connected.length ? <span className="font-mono text-xs text-ink/40">{connected.length}</span> : null}
+        <h2 className="text-xs font-medium uppercase tracking-wide text-mkt-muted">Repos</h2>
+        {connected.length ? <span className="font-mono text-xs text-mkt-muted">{connected.length}</span> : null}
       </div>
 
       <nav className="px-2">
         {connected.length === 0 ? (
-          <p className="px-2 py-3 text-sm leading-relaxed text-ink/60">
+          <p className="px-2 py-3 text-sm leading-relaxed text-mkt-muted">
             No repos connected yet. Connect one to build its API usage index.
           </p>
         ) : (
@@ -29,22 +29,22 @@ export default function RepoRail({ repos, integrationsByRepo, selectedRepoId, on
               return (
                 <li key={repo.id}>
                   <div
-                    className={`flex items-center gap-2 rounded-md border-l-2 py-2 pl-3 pr-2 transition-colors ${
-                      isSelected ? "border-signal bg-paper" : "border-transparent hover:bg-paper/70"
+                    className={`flex items-center gap-2 rounded-[10px] border-l-2 py-2 pl-3 pr-2 transition-colors ${
+                      isSelected ? "border-mkt-signal bg-mkt-bg" : "border-transparent hover:bg-mkt-bg/70"
                     }`}
                   >
                     <button onClick={() => onSelect(repo.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
                       <span className={`h-2 w-2 shrink-0 rounded-full ${statusDot(repo.scanStatus)}`} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-mono text-sm text-ink">{repo.fullName}</span>
-                        <span className="block text-xs text-ink/50">
+                        <span className="block truncate font-mono text-sm text-mkt-text">{repo.fullName}</span>
+                        <span className="block text-xs text-mkt-muted">
                           {repo.scanStatus === "scanning" ? "scanning..." : `${count} call site${count === 1 ? "" : "s"}`}
                         </span>
                       </span>
                     </button>
                     <button
                       onClick={() => onDisconnect(repo.fullName)}
-                      className="shrink-0 rounded border border-line px-2 py-1 font-mono text-[11px] text-ink/50 transition-colors hover:border-ink/30 hover:bg-surface hover:text-ink/80"
+                      className="shrink-0 rounded-md border border-mkt-line px-2 py-1 font-mono text-[11px] text-mkt-muted transition-colors hover:border-mkt-muted/40 hover:bg-mkt-surface hover:text-mkt-text active:scale-[0.98]"
                     >
                       Disconnect
                     </button>
@@ -59,7 +59,7 @@ export default function RepoRail({ repos, integrationsByRepo, selectedRepoId, on
       <div className="px-2 py-3">
         <button
           onClick={onConnectClick}
-          className="w-full rounded-md border border-line px-3 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/30 hover:bg-paper"
+          className="w-full rounded-[10px] border border-mkt-line px-3 py-2 text-sm font-medium text-mkt-text transition-colors hover:border-mkt-muted/40 hover:bg-mkt-bg active:scale-[0.98]"
         >
           Connect a repo
         </button>

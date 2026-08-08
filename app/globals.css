@@ -1,51 +1,96 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #12161b;
-  --paper: #edf0f2;
-  --surface: #ffffff;
-  --line: #d3dae0;
-  --signal: #3b2fe8;
-  --warn: #b5651d;
-  --add: #1a7f4b;
-  --del: #b3261e;
+  /* The whole app is dark-themed end to end (dashboard included). Kept the
+     mkt- prefix from when only the marketing pages were dark, since it's
+     still a useful signal that these are the app's real design tokens. */
+  --mkt-bg: #0c0f13;
+  --mkt-surface: #14181d;
+  --mkt-line: #262c34;
+  --mkt-text: #e8ecf0;
+  --mkt-muted: #8a939e;
+  --mkt-signal: #6c63ff;
+  --mkt-warn: #d08a3e;
+  --mkt-add: #3fb950;
+  --mkt-del: #f85149;
 }
 
 @theme inline {
-  --color-ink: var(--ink);
-  --color-paper: var(--paper);
-  --color-surface: var(--surface);
-  --color-line: var(--line);
-  --color-signal: var(--signal);
-  --color-warn: var(--warn);
-  --color-add: var(--add);
-  --color-del: var(--del);
+  --color-mkt-bg: var(--mkt-bg);
+  --color-mkt-surface: var(--mkt-surface);
+  --color-mkt-line: var(--mkt-line);
+  --color-mkt-text: var(--mkt-text);
+  --color-mkt-muted: var(--mkt-muted);
+  --color-mkt-signal: var(--mkt-signal);
+  --color-mkt-warn: var(--mkt-warn);
+  --color-mkt-add: var(--mkt-add);
+  --color-mkt-del: var(--mkt-del);
+
   --font-display: var(--font-bricolage);
   --font-sans: var(--font-instrument);
   --font-mono: var(--font-jetbrains);
 }
 
 body {
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--mkt-bg);
+  color: var(--mkt-text);
 }
 
 :focus-visible {
-  outline: 2px solid var(--signal);
+  outline: 2px solid var(--mkt-signal);
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }
 
+@keyframes diff-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.diff-line-del {
+  animation: diff-reveal 300ms ease-out both;
+}
+
+.diff-line-add {
+  animation: diff-reveal 300ms ease-out 200ms both;
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  opacity: 0;
+}
+
+.reveal-in {
+  animation: reveal-up 400ms ease-out both;
+}
+
 .instrument-grid {
-  background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--mkt-line) 1px, transparent 1px);
   background-size: 28px 28px;
   background-position: -13px -13px;
 }
@@ -59,8 +104,8 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  border: 2px solid var(--ink);
-  background: var(--paper);
+  border: 2px solid var(--mkt-text);
+  background: var(--mkt-bg);
 }
 
 .rail-node-mark::after {
@@ -68,7 +113,7 @@ body {
   position: absolute;
   inset: 3px;
   border-radius: 9999px;
-  background: var(--signal);
+  background: var(--mkt-signal);
 }
 
 @keyframes rail-node-in {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import RepoRail from "./RepoRail";
 import ConnectRepoModal from "./ConnectRepoModal";
 import DriftRail from "./DriftRail";
@@ -201,7 +202,9 @@ export default function Dashboard() {
 
   if (user === undefined) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-ink/60">Loading your account...</div>
+      <div className="dashboard flex flex-1 items-center justify-center bg-mkt-bg text-sm text-mkt-muted">
+        Loading your account...
+      </div>
     );
   }
 
@@ -213,20 +216,30 @@ export default function Dashboard() {
     : "no vendor changes detected yet";
 
   return (
-    <div className="instrument-grid flex flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-line bg-surface px-6 py-4">
-        <span className="flex items-center gap-2.5">
-          <span className="rail-node-mark h-3 w-3" />
-          <span className="font-display text-lg font-semibold tracking-tight">Driftwatch</span>
-        </span>
+    <div className="dashboard instrument-grid flex flex-1 flex-col bg-mkt-bg text-mkt-text">
+      <header className="flex items-center justify-between border-b border-mkt-line bg-mkt-surface px-6 py-4">
+        <div className="flex items-center gap-8">
+          <span className="flex items-center gap-2.5">
+            <span className="rail-node-mark h-3 w-3" />
+            <span className="font-display text-lg font-semibold tracking-tight">Driftwatch</span>
+          </span>
+          <nav className="hidden items-center gap-6 sm:flex">
+            <Link href="/" className="text-sm text-mkt-muted transition-colors hover:text-mkt-text">
+              Home
+            </Link>
+            <Link href="/pricing" className="text-sm text-mkt-muted transition-colors hover:text-mkt-text">
+              Pricing
+            </Link>
+          </nav>
+        </div>
         {user ? (
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={user.avatarUrl} alt="" className="h-7 w-7 rounded-full border border-line" />
-            <span className="font-mono text-sm text-ink/70">{user.login}</span>
+            <img src={user.avatarUrl} alt="" className="h-7 w-7 rounded-full border border-mkt-line" />
+            <span className="font-mono text-sm text-mkt-muted">{user.login}</span>
             <button
               onClick={handleLogout}
-              className="rounded-md border border-line px-3 py-1.5 text-sm text-ink/70 transition-colors hover:bg-paper"
+              className="rounded-[10px] border border-mkt-line px-3 py-1.5 text-sm text-mkt-muted transition-colors hover:border-mkt-muted/40 hover:bg-mkt-bg active:scale-[0.98]"
             >
               Sign out
             </button>
@@ -235,11 +248,11 @@ export default function Dashboard() {
       </header>
 
       {globalError ? (
-        <div className="border-b border-del/30 bg-del/5 px-6 py-3 text-sm text-del">{globalError}</div>
+        <div className="border-b border-mkt-del/30 bg-mkt-del/5 px-6 py-3 text-sm text-mkt-del">{globalError}</div>
       ) : null}
 
       <div className="grid flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-[260px_1fr_340px] lg:gap-5 lg:p-6">
-        <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(18,22,27,0.04)]">
+        <div className="overflow-hidden rounded-[10px] border border-mkt-line bg-mkt-surface">
           <RepoRail
             repos={allRepos}
             integrationsByRepo={integrationsByRepo}
@@ -250,7 +263,7 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="flex min-h-[420px] flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(18,22,27,0.04)]">
+        <div className="flex min-h-[420px] flex-col overflow-hidden rounded-[10px] border border-mkt-line bg-mkt-surface">
           <DriftRail
             changes={changes}
             prs={prs}
@@ -262,13 +275,13 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(18,22,27,0.04)]">
+        <div className="overflow-hidden rounded-[10px] border border-mkt-line bg-mkt-surface">
           <IntegrationPanel repo={selectedRepo} integrations={selectedIntegrations} scanJob={scanJob} />
         </div>
       </div>
 
-      <footer className="border-t border-line bg-surface px-6 py-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 font-mono text-[11px] text-ink/45">
+      <footer className="border-t border-mkt-line bg-mkt-surface px-6 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 font-mono text-[11px] text-mkt-muted">
           <span>
             {connectedCount} repo{connectedCount === 1 ? "" : "s"} connected · watching{" "}
             {VENDORS.map((v) => v.name).join(", ")}
