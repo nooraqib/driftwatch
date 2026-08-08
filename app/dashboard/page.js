@@ -37,6 +37,17 @@ export default function Dashboard() {
   const [checkResults, setCheckResults] = useState(null);
 
   const pollTimer = useRef(null);
+  // Guards that have to be read and written synchronously, so they can't be
+  // React state: the poll callbacks below close over stale state values.
+  //
+  // The scan poller fires every 900ms while /api/scan/status routinely takes
+  // longer than that (it pulls a 20-file batch from GitHub), so several
+  // callbacks are normally in flight at once — and /api/scan/status reports
+  // "done" to every one of them. stopPolling() clears the timer but cannot
+  // cancel callbacks that have already been dispatched, so without these
+  // each one would reach /api/check and open its own duplicate draft PR.
+  const pollInFlight = useRef(false);
+  const checkInFlight = useRef(false);
 
   const loadRepos = useCallback(async () => {
     try {
@@ -136,7 +147,11 @@ export default function Dashboard() {
       setScanJob({ jobId: data.jobId, repoId: fullName, progress: 0, filesScanned: 0, total: data.total, status: "scanning" });
 
       stopPolling();
+      pollInFlight.current = false;
       pollTimer.current = setInterval(async () => {
+        // Skip this tick if the previous batch request hasn't come back yet.
+        if (pollInFlight.current) return;
+        pollInFlight.current = true;
         try {
           const status = await apiFetch(`/api/scan/status?jobId=${data.jobId}`);
           setScanJob({ jobId: data.jobId, repoId: fullName, ...status });
@@ -152,6 +167,8 @@ export default function Dashboard() {
         } catch (err) {
           stopPolling();
           setGlobalError(err.message);
+        } finally {
+          pollInFlight.current = false;
         }
       }, 900);
     } catch (err) {
@@ -179,8 +196,16 @@ export default function Dashboard() {
     }
   }
 
-  async function runCheckForRepo(repoId) {
+  async function runCheckForRepo(repoId, { force = false } = {}) {
     if (!repoId) return;
+    // Concurrent runs only — a deliberate re-check (or a force re-check)
+    // after this one settles is still allowed, because the flag is cleared
+    // in the finally below. Set before the first await so two callers in the
+    // same tick can't both get through: /api/check reads the store, then
+    // spends seconds in patchAndShip before writing the PR record, so its
+    // own already-shipped guard cannot see a request that is still running.
+    if (checkInFlight.current) return;
+    checkInFlight.current = true;
     setChecking(true);
     setCheckResults(null);
     setGlobalError(null);
@@ -188,19 +213,27 @@ export default function Dashboard() {
       const data = await apiFetch("/api/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoId }),
+        body: JSON.stringify({ repoId, force }),
       });
       setCheckResults(data.results);
       await Promise.all([loadChanges(), loadPrs()]);
     } catch (err) {
       setGlobalError(err.message);
     } finally {
+      checkInFlight.current = false;
       setChecking(false);
     }
   }
 
   async function runCheck() {
     await runCheckForRepo(selectedRepoId);
+  }
+
+  // Once a vendor has been checked, the stored snapshot matches the live
+  // changelog and every later check is "unchanged". Forcing bypasses that
+  // snapshot so the same changelog can be classified again.
+  async function forceCheck() {
+    await runCheckForRepo(selectedRepoId, { force: true });
   }
 
   async function handleLogout() {
@@ -278,6 +311,7 @@ export default function Dashboard() {
             selectedRepo={selectedRepo}
             selectedIntegrations={selectedIntegrations}
             onRunCheck={runCheck}
+            onForceCheck={forceCheck}
             checking={checking}
             checkResults={checkResults}
             scanJob={scanJob}
