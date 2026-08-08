@@ -73,6 +73,14 @@ node scripts/test-scan.js owner/repo
 node --env-file=.env.local scripts/test-check.js
 ```
 
+## Adding & testing more vendors
+
+Twilio is now wired the same way Stripe is — set `TWILIO_SPEC_URL` in
+`.env.local` to enable live change detection for it (it's present but
+blank by default). See [MULTI_VENDOR_TESTING.md](./MULTI_VENDOR_TESTING.md)
+for the full step-by-step guide to testing scanning, detection, and
+patch/ship across multiple vendors at once.
+
 ## Project structure
 
 See [CLAUDE.md](./CLAUDE.md) for a full breakdown of the codebase, the
