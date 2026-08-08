@@ -25,7 +25,7 @@ export default function IntegrationPanel({ repo, integrations, scanJob }) {
   const isScanningThisRepo = scanJob && scanJob.repoId === repo?.id && scanJob.status !== "done";
 
   return (
-    <aside className="border-t border-line lg:border-t-0 lg:border-l">
+    <aside className="h-full">
       <div className="px-4 py-3">
         <h2 className="text-xs font-medium uppercase tracking-wide text-ink/50">API usage index</h2>
       </div>

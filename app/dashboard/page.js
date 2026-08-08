@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import RepoRail from "./RepoRail";
 import ConnectRepoModal from "./ConnectRepoModal";
 import DriftRail from "./DriftRail";
 import IntegrationPanel from "./IntegrationPanel";
+import { VENDORS } from "@/lib/vendors";
 
 async function apiFetch(url, options) {
   const res = await fetch(url, options);
@@ -16,6 +18,7 @@ async function apiFetch(url, options) {
 }
 
 export default function Dashboard() {
+  const router = useRouter();
   const [user, setUser] = useState(undefined); // undefined = loading, null = signed out
   const [globalError, setGlobalError] = useState(null);
 
@@ -87,22 +90,23 @@ export default function Dashboard() {
         const me = await apiFetch("/api/auth/me");
         setUser(me);
       } catch {
-        window.location.href = "/";
+        router.push("/");
       }
     })();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (user === undefined || user === null) return;
-    loadRepos();
-    loadChanges();
-    loadPrs();
+    (async () => {
+      await Promise.all([loadRepos(), loadChanges(), loadPrs()]);
+    })();
   }, [user, loadRepos, loadChanges, loadPrs]);
 
   useEffect(() => {
-    if (selectedRepoId && !integrationsByRepo[selectedRepoId]) {
-      loadIntegrations(selectedRepoId);
-    }
+    if (!selectedRepoId || integrationsByRepo[selectedRepoId]) return;
+    (async () => {
+      await loadIntegrations(selectedRepoId);
+    })();
   }, [selectedRepoId, integrationsByRepo, loadIntegrations]);
 
   useEffect(() => {
@@ -192,7 +196,7 @@ export default function Dashboard() {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
+    router.push("/");
   }
 
   if (user === undefined) {
@@ -203,10 +207,14 @@ export default function Dashboard() {
 
   const selectedIntegrations = selectedRepoId ? integrationsByRepo[selectedRepoId] || [] : [];
   const selectedRepo = allRepos.find((r) => r.id === selectedRepoId) || null;
+  const connectedCount = allRepos.filter((r) => r.connected).length;
+  const lastChangeText = changes[0]
+    ? `last detected change ${new Date(changes[0].detectedAt).toLocaleString()}`
+    : "no vendor changes detected yet";
 
   return (
-    <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-line px-6 py-4">
+    <div className="instrument-grid flex flex-1 flex-col">
+      <header className="flex items-center justify-between border-b border-line bg-surface px-6 py-4">
         <span className="flex items-center gap-2.5">
           <span className="rail-node-mark h-3 w-3" />
           <span className="font-display text-lg font-semibold tracking-tight">Driftwatch</span>
@@ -218,7 +226,7 @@ export default function Dashboard() {
             <span className="font-mono text-sm text-ink/70">{user.login}</span>
             <button
               onClick={handleLogout}
-              className="rounded-md border border-line px-3 py-1.5 text-sm text-ink/70 transition-colors hover:bg-surface"
+              className="rounded-md border border-line px-3 py-1.5 text-sm text-ink/70 transition-colors hover:bg-paper"
             >
               Sign out
             </button>
@@ -230,28 +238,44 @@ export default function Dashboard() {
         <div className="border-b border-del/30 bg-del/5 px-6 py-3 text-sm text-del">{globalError}</div>
       ) : null}
 
-      <div className="grid flex-1 grid-cols-1 lg:grid-cols-[240px_1fr_320px]">
-        <RepoRail
-          repos={allRepos}
-          integrationsByRepo={integrationsByRepo}
-          selectedRepoId={selectedRepoId}
-          onSelect={setSelectedRepoId}
-          onConnectClick={() => setShowConnectModal(true)}
-          onDisconnect={disconnectRepo}
-        />
+      <div className="grid flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-[260px_1fr_340px] lg:gap-5 lg:p-6">
+        <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(18,22,27,0.04)]">
+          <RepoRail
+            repos={allRepos}
+            integrationsByRepo={integrationsByRepo}
+            selectedRepoId={selectedRepoId}
+            onSelect={setSelectedRepoId}
+            onConnectClick={() => setShowConnectModal(true)}
+            onDisconnect={disconnectRepo}
+          />
+        </div>
 
-        <DriftRail
-          changes={changes}
-          prs={prs}
-          selectedRepo={selectedRepo}
-          onRunCheck={runCheck}
-          checking={checking}
-          checkResults={checkResults}
-          scanJob={scanJob}
-        />
+        <div className="flex min-h-[420px] flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(18,22,27,0.04)]">
+          <DriftRail
+            changes={changes}
+            prs={prs}
+            selectedRepo={selectedRepo}
+            onRunCheck={runCheck}
+            checking={checking}
+            checkResults={checkResults}
+            scanJob={scanJob}
+          />
+        </div>
 
-        <IntegrationPanel repo={selectedRepo} integrations={selectedIntegrations} scanJob={scanJob} />
+        <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(18,22,27,0.04)]">
+          <IntegrationPanel repo={selectedRepo} integrations={selectedIntegrations} scanJob={scanJob} />
+        </div>
       </div>
+
+      <footer className="border-t border-line bg-surface px-6 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 font-mono text-[11px] text-ink/45">
+          <span>
+            {connectedCount} repo{connectedCount === 1 ? "" : "s"} connected · watching{" "}
+            {VENDORS.map((v) => v.name).join(", ")}
+          </span>
+          <span>{lastChangeText}</span>
+        </div>
+      </footer>
 
       {showConnectModal ? (
         <ConnectRepoModal
