@@ -16,6 +16,8 @@ function outcomeLine(result) {
       return { text: `${result.vendor}: detected a non-breaking change. No action needed.`, tone: "text-mkt-muted" };
     case "not-applicable":
       return { text: `${result.vendor}: detected, not applicable to your code.`, tone: "text-mkt-muted" };
+    case "already-shipped":
+      return { text: `${result.vendor}: already opened a pull request for this change.`, tone: "text-mkt-muted" };
     case "pr-opened":
       return { text: `${result.vendor}: opened a draft pull request.`, tone: "text-mkt-add" };
     case "error":
@@ -85,7 +87,16 @@ function ChangeNode({ change, prs, isNew }) {
   );
 }
 
-export default function DriftRail({ changes, prs, selectedRepo, onRunCheck, checking, checkResults, scanJob }) {
+export default function DriftRail({
+  changes,
+  prs,
+  selectedRepo,
+  selectedIntegrations,
+  onRunCheck,
+  checking,
+  checkResults,
+  scanJob,
+}) {
   const prevTopId = useRef(null);
   const [newestId, setNewestId] = useState(null);
 
@@ -99,6 +110,18 @@ export default function DriftRail({ changes, prs, selectedRepo, onRunCheck, chec
 
   const repoIsScanning = scanJob && scanJob.repoId === selectedRepo?.id && scanJob.status !== "done";
   const canRunCheck = Boolean(selectedRepo) && !checking && !repoIsScanning;
+
+  // Vendor changes are global (one changelog, fanned out to every repo that
+  // uses it), but a pull request only belongs to one repo — only show PRs
+  // for the repo currently selected, so switching repos doesn't surface
+  // another repo's pull request under the same change.
+  const scopedPrs = selectedRepo ? prs.filter((pr) => pr.repoId === selectedRepo.id) : [];
+
+  // A vendor change is only worth showing for repos that actually depend on
+  // that vendor — otherwise every connected repo would show the exact same
+  // global list, including vendors it has zero call sites for.
+  const usedVendors = new Set((selectedIntegrations || []).map((i) => i.vendor));
+  const relevantChanges = selectedRepo ? changes.filter((change) => usedVendors.has(change.vendor)) : changes;
 
   return (
     <main className="flex flex-col">
@@ -145,10 +168,14 @@ export default function DriftRail({ changes, prs, selectedRepo, onRunCheck, chec
           <p className="text-sm leading-relaxed text-mkt-muted">
             No vendor changes detected yet. Run a check to watch {"{Stripe}"} for breaking changes.
           </p>
+        ) : relevantChanges.length === 0 ? (
+          <p className="text-sm leading-relaxed text-mkt-muted">
+            {selectedRepo?.fullName} doesn&apos;t use any of the vendors that have detected changes yet.
+          </p>
         ) : (
           <ul className="relative flex flex-col gap-6 border-l-2 border-mkt-text/80 pl-0">
-            {changes.map((change) => (
-              <ChangeNode key={change.id} change={change} prs={prs} isNew={change.id === newestId} />
+            {relevantChanges.map((change) => (
+              <ChangeNode key={change.id} change={change} prs={scopedPrs} isNew={change.id === newestId} />
             ))}
           </ul>
         )}

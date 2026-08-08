@@ -37,29 +37,48 @@ export async function POST(request) {
 
       setState((s) => ({ ...s, vendorSnapshots: { ...s.vendorSnapshots, [vendor.name]: detection.rawText } }));
 
-      if (!detection.changed) {
-        results.push({ vendor: vendor.name, outcome: "unchanged" });
+      let vendorChange;
+      if (detection.changed) {
+        vendorChange = {
+          id: crypto.randomUUID(),
+          vendor: vendor.name,
+          sourceUrl: vendor.specUrl,
+          rawText: detection.rawText,
+          severity: detection.severity,
+          breaking: detection.breaking,
+          affectedSymbols: detection.affectedSymbols || [],
+          summary: detection.summary,
+          migration: detection.migration,
+          sourceLine: detection.sourceLine,
+          deadline: detection.deadline,
+          detectedAt: new Date().toISOString(),
+        };
+        setState((s) => ({ ...s, vendorChanges: [vendorChange, ...s.vendorChanges] }));
+      } else {
+        // The changelog text hasn't moved since the last time ANY repo
+        // checked it — that's expected, since the snapshot (and the one
+        // Gemini classification) is shared across every repo watching this
+        // vendor. But this specific repo may not have been matched against
+        // that change yet (e.g. it was just connected, or checked for the
+        // first time after another repo already triggered detection). Reuse
+        // the most recent known change for this vendor instead of stopping.
+        vendorChange = getState().vendorChanges.find((c) => c.vendor === vendor.name) || null;
+        if (!vendorChange) {
+          results.push({ vendor: vendor.name, outcome: "unchanged" });
+          continue;
+        }
+      }
+
+      if (!vendorChange.breaking) {
+        results.push({ vendor: vendor.name, outcome: "non-breaking", change: vendorChange });
         continue;
       }
 
-      const vendorChange = {
-        id: crypto.randomUUID(),
-        vendor: vendor.name,
-        sourceUrl: vendor.specUrl,
-        rawText: detection.rawText,
-        severity: detection.severity,
-        breaking: detection.breaking,
-        affectedSymbols: detection.affectedSymbols || [],
-        summary: detection.summary,
-        migration: detection.migration,
-        sourceLine: detection.sourceLine,
-        deadline: detection.deadline,
-        detectedAt: new Date().toISOString(),
-      };
-      setState((s) => ({ ...s, vendorChanges: [vendorChange, ...s.vendorChanges] }));
-
-      if (!detection.breaking) {
-        results.push({ vendor: vendor.name, outcome: "non-breaking", change: vendorChange });
+      const alreadyShipped = Object.values(getState().pullRequests).some(
+        (pr) => pr.changeId === vendorChange.id && pr.repoId === repoId
+      );
+      if (alreadyShipped) {
+        results.push({ vendor: vendor.name, outcome: "already-shipped", change: vendorChange });
         continue;
       }
 
