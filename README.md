@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Driftwatch
 
-## Getting Started
+**Dependabot for every API you depend on.**
 
-First, run the development server:
+Dependabot fires when a package version bumps. Driftwatch fires when a
+third-party API (Stripe, Twilio, ...) changes its *behavior* — something
+that produces no version bump and no `package.json` diff at all.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Driftwatch watches a vendor's changelog, finds the exact places in your
+codebase that use whatever changed, generates a fix, verifies it, and opens
+a **draft** pull request. It never merges automatically.
+
+## How it works
+
+```
+Watch vendor spec/changelog
+        |  diff against last snapshot
+Detect  -> Gemini classifies: breaking? severity? affected symbols?
+        |
+Match   -> look up affected symbols in the repo's API usage index
+        |  no match = stop, no PR, no noise
+Patch   -> Gemini rewrites only the affected files
+        |
+Verify  -> syntax check; on failure, retry once with the error
+        |
+Ship    -> open a draft pull request on a new branch
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Getting started
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+1. Install dependencies:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   npm install
+   ```
 
-## Learn More
+2. Copy the environment variables below into `.env.local` and fill them in.
 
-To learn more about Next.js, take a look at the following resources:
+3. Run the dev server:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   npm run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. Open [http://localhost:3000](http://localhost:3000), sign in with GitHub,
+   connect a repo, and click **Run check now**.
 
-## Deploy on Vercel
+## Environment variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+GITHUB_CLIENT_ID=          # from a GitHub OAuth App
+GITHUB_CLIENT_SECRET=
+GITHUB_CALLBACK_URL=http://localhost:3000/api/auth/callback
+GEMINI_API_KEY=            # from aistudio.google.com/apikey
+VENDOR_SPEC_URL=           # raw URL of the changelog to watch
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`GITHUB_CALLBACK_URL` must exactly match the callback URL configured on the
+GitHub OAuth App itself (**GitHub Settings → Developer settings → OAuth
+Apps**).
+
+## Verifying the pipeline without the UI
+
+Two standalone scripts exercise the core logic directly, without a running
+server:
+
+```bash
+# Print a repo's API usage index (file, line, matched symbol) as JSON
+node scripts/test-scan.js owner/repo
+
+# Run the full match -> patch -> verify -> ship pipeline against the demo
+# repo, using a hardcoded vendor-change description
+node --env-file=.env.local scripts/test-check.js
+```
+
+## Project structure
+
+See [CLAUDE.md](./CLAUDE.md) for a full breakdown of the codebase, the
+design system, and the decisions behind them.
+
+## Stack
+
+Next.js (App Router, JavaScript), Tailwind CSS, `@octokit/rest`,
+`@google/generative-ai` (`gemini-flash-latest`), and a JSON-file-in-`/tmp`
+store — no database. Deploys to Vercel.

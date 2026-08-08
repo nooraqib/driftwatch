@@ -1,69 +1,90 @@
-import Image from "next/image";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { VENDORS } from "@/lib/vendors";
 
-export default function Home() {
+export default async function Home({ searchParams }) {
+  const store = await cookies();
+  if (store.get("gh_token")) {
+    redirect("/dashboard");
+  }
+
+  const params = await searchParams;
+  const error = params?.error;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.js
-            </code>{" "}
-            file.
+    <div className="instrument-grid flex flex-1 flex-col items-center justify-center px-6 py-16">
+      <div className="grid w-full max-w-5xl grid-cols-1 items-start gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="rail-node-mark h-3 w-3" />
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-ink/50">Driftwatch</p>
+          </div>
+
+          <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] tracking-tight text-ink sm:text-5xl">
+            Dependabot for every API you depend on.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p className="mt-5 max-w-md text-base leading-relaxed text-ink/70 sm:text-lg">
+            Vendor contract changes don&apos;t bump a version. Driftwatch watches them anyway — finds the exact
+            call sites in your code, generates a fix, verifies it, and opens a draft pull request.
+          </p>
+
+          <div className="mt-8 max-w-md rounded-lg border border-line bg-surface p-5">
+            <p className="text-sm leading-relaxed text-ink/70">
+              Dependabot fires on a version bump. Your{" "}
+              <code className="rounded border border-line bg-paper px-1.5 py-0.5 font-mono text-[0.85em]">
+                package.json
+              </code>{" "}
+              did not change. Neither did your alerts.
+            </p>
+          </div>
+
+          {error ? (
+            <div className="mt-6 max-w-md rounded-lg border border-del/30 bg-del/5 p-4 text-sm text-del">{error}</div>
+          ) : null}
+
+          <a
+            href="/api/auth/login"
+            className="mt-8 inline-flex items-center justify-center gap-2 rounded-md bg-signal px-5 py-3 text-sm font-medium text-white transition-all hover:bg-signal/90 hover:-translate-y-px"
+          >
+            Sign in with GitHub
+          </a>
+
+          <p className="mt-6 font-mono text-xs text-ink/40">
+            Watching {VENDORS.map((v) => v.name).join(" · ")}
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="rounded-lg border border-line bg-surface p-5">
+          <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink/40">Example run</p>
+
+          <ul className="relative mt-4 flex flex-col gap-5 border-l-2 border-ink/80 pl-5">
+            <li className="relative">
+              <span className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full border-2 border-ink bg-paper" />
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-display text-sm font-semibold text-ink">Stripe</span>
+                <span className="rounded-full border border-del/40 bg-del/5 px-2 py-0.5 font-mono text-[11px] text-del">
+                  high
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-ink/80">Charges API removed in favor of Payment Intents.</p>
+              <p className="mt-2 font-mono text-xs text-ink/50">server/payments.js:5</p>
+              <p className="mt-1 text-xs font-medium text-add">Opened a draft pull request</p>
+            </li>
+            <li className="relative opacity-60">
+              <span className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full border-2 border-ink bg-paper" />
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-display text-sm font-semibold text-ink">Twilio</span>
+                <span className="rounded-full border border-line bg-paper px-2 py-0.5 font-mono text-[11px] text-ink/60">
+                  low
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-ink/80">Message status webhook field renamed.</p>
+              <p className="mt-2 font-mono text-xs text-ink/50">Detected, not applicable to your code</p>
+            </li>
+          </ul>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
