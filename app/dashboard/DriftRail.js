@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { VENDORS } from "@/lib/vendors";
+
+const WATCHED_VENDORS = VENDORS.map((v) => v.name).join(", ");
 
 function severityStyle(severity) {
   if (severity === "high") return "text-mkt-del border-mkt-del/40 bg-mkt-del/5";
@@ -93,6 +96,7 @@ export default function DriftRail({
   selectedRepo,
   selectedIntegrations,
   onRunCheck,
+  onForceCheck,
   checking,
   checkResults,
   scanJob,
@@ -126,13 +130,26 @@ export default function DriftRail({
   return (
     <main className="flex flex-col">
       <div className="flex flex-col gap-3 border-b border-mkt-line px-6 py-5">
-        <button
-          onClick={onRunCheck}
-          disabled={!canRunCheck}
-          className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-[10px] bg-mkt-signal px-4 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
-        >
-          {checking ? "Running check..." : "Run check now"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={onRunCheck}
+            disabled={!canRunCheck}
+            className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-[10px] bg-mkt-signal px-4 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
+          >
+            {checking ? "Running check..." : "Run check now"}
+          </button>
+          {/* Secondary on purpose: re-classifies the whole changelog instead
+              of only what moved since the last check, so a vendor that has
+              already been checked can be checked again. */}
+          <button
+            onClick={onForceCheck}
+            disabled={!canRunCheck}
+            title="Ignore the stored changelog snapshot and re-classify the whole changelog"
+            className="inline-flex h-10 w-fit items-center justify-center rounded-[10px] border border-mkt-line px-3.5 font-mono text-xs text-mkt-muted transition-colors hover:border-mkt-muted/40 hover:bg-mkt-bg hover:text-mkt-text active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
+          >
+            Force re-check
+          </button>
+        </div>
         {!selectedRepo ? (
           <p className="text-xs text-mkt-muted">Connect and select a repo before running a check.</p>
         ) : repoIsScanning ? (
@@ -166,7 +183,7 @@ export default function DriftRail({
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {changes.length === 0 ? (
           <p className="text-sm leading-relaxed text-mkt-muted">
-            No vendor changes detected yet. Run a check to watch {"{Stripe}"} for breaking changes.
+            No vendor changes detected yet. Run a check to watch {WATCHED_VENDORS} for breaking changes.
           </p>
         ) : relevantChanges.length === 0 ? (
           <p className="text-sm leading-relaxed text-mkt-muted">
