@@ -30,6 +30,13 @@ function outcomeLine(result) {
   }
 }
 
+function prStatusBadge(pr) {
+  if (pr.merged) return { text: "Merged", style: "text-mkt-signal border-mkt-signal/40 bg-mkt-signal/10" };
+  if (pr.state === "closed") return { text: "Closed", style: "text-mkt-muted border-mkt-line bg-mkt-bg" };
+  if (pr.draft === false) return { text: "Open", style: "text-mkt-add border-mkt-add/40 bg-mkt-add/5" };
+  return { text: "Draft", style: "text-mkt-warn border-mkt-warn/40 bg-mkt-warn/5" };
+}
+
 function ChangeNode({ change, prs, isNew }) {
   const [expanded, setExpanded] = useState(false);
   const relatedPrs = prs.filter((pr) => pr.changeId === change.id);
@@ -62,26 +69,34 @@ function ChangeNode({ change, prs, isNew }) {
             <p className="mt-2 font-mono text-xs text-mkt-muted">No pull requests opened for this change yet.</p>
           ) : (
             <div className="mt-3 flex flex-col gap-3">
-              {relatedPrs.map((pr) => (
-                <div key={pr.id}>
-                  <p className="font-mono text-xs text-mkt-muted">{pr.repoId}</p>
-                  <ul className="mt-1 flex flex-col gap-1">
-                    {(pr.callSites || []).map((site, i) => (
-                      <li key={i} className="font-mono text-xs text-mkt-muted">
-                        {site.file}:{site.line}
-                      </li>
-                    ))}
-                  </ul>
-                  <a
-                    href={pr.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-block text-xs font-medium text-mkt-signal hover:underline"
-                  >
-                    View pull request →
-                  </a>
-                </div>
-              ))}
+              {relatedPrs.map((pr) => {
+                const badge = prStatusBadge(pr);
+                return (
+                  <div key={pr.id}>
+                    <div className="flex items-center gap-2">
+                      <p className="font-mono text-xs text-mkt-muted">{pr.repoId}</p>
+                      <span className={`rounded-full border px-1.5 py-0.5 font-mono text-[10px] ${badge.style}`}>
+                        {badge.text}
+                      </span>
+                    </div>
+                    <ul className="mt-1 flex flex-col gap-1">
+                      {(pr.callSites || []).map((site, i) => (
+                        <li key={i} className="font-mono text-xs text-mkt-muted">
+                          {site.file}:{site.line}
+                        </li>
+                      ))}
+                    </ul>
+                    <a
+                      href={pr.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-block text-xs font-medium text-mkt-signal hover:underline"
+                    >
+                      View pull request →
+                    </a>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

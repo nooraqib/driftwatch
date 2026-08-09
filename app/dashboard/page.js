@@ -301,6 +301,7 @@ export default function Dashboard() {
             onSelect={setSelectedRepoId}
             onConnectClick={() => setShowConnectModal(true)}
             onDisconnect={disconnectRepo}
+            onRescan={connectRepo}
           />
         </div>
 
