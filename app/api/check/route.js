@@ -5,14 +5,36 @@ import { VENDORS } from "@/lib/vendors";
 import { detectVendorChange, matchAffectedCallSites } from "@/lib/detect";
 import { patchAndShip } from "@/lib/patch";
 
+// Up to 4 sequential Gemini calls plus several GitHub writes happen inline
+// here, so the default serverless function timeout is not enough headroom.
+export const maxDuration = 60;
+
+// A forced re-check re-classifies the whole changelog, so it produces a fresh
+// vendorChange every time — that new node animating into the Drift Rail is
+// the point. To stop repeated forced runs from stacking identical nodes,
+// drop older records for the same vendor that say the same thing AND never
+// produced a pull request. Anything that shipped a PR is history worth
+// keeping (and the Drift Rail hangs those PRs off their change node).
+function pruneSupersededChanges(changes, incoming, pullRequests) {
+  const changeIdsWithPrs = new Set(Object.values(pullRequests).map((pr) => pr.changeId));
+  return changes.filter(
+    (c) => c.vendor !== incoming.vendor || c.summary !== incoming.summary || changeIdsWithPrs.has(c.id)
+  );
+}
+
 // Runs detect -> match -> patch -> ship for one connected repo, across every
 // vendor that has a specUrl configured. Returns every outcome, including
 // "no match" ones, so the UI can show "detected, not applicable" instead of
 // staying silent.
+//
+// `force` ignores the stored changelog snapshot so a check that already ran
+// can be run again — without it, the second run of any vendor always returns
+// "unchanged" and the pipeline never reaches a pull request.
 export async function POST(request) {
   try {
-    const { repoId } = await request.json();
+    const { repoId, force } = await request.json();
     if (!repoId) return NextResponse.json({ error: "repoId is required." }, { status: 400 });
+    const forced = Boolean(force);
 
     const token = await getToken();
     const state = getState();
@@ -25,7 +47,9 @@ export async function POST(request) {
     const results = [];
 
     for (const vendor of vendorsToCheck) {
-      const previousSnapshot = state.vendorSnapshots[vendor.name] || null;
+      // Passing null makes detectVendorChange treat the entire changelog as
+      // the diff, exactly as it does on a vendor's very first check.
+      const previousSnapshot = forced ? null : state.vendorSnapshots[vendor.name] || null;
 
       let detection;
       try {
@@ -53,7 +77,13 @@ export async function POST(request) {
           deadline: detection.deadline,
           detectedAt: new Date().toISOString(),
         };
-        setState((s) => ({ ...s, vendorChanges: [vendorChange, ...s.vendorChanges] }));
+        setState((s) => ({
+          ...s,
+          vendorChanges: [
+            vendorChange,
+            ...(forced ? pruneSupersededChanges(s.vendorChanges, vendorChange, s.pullRequests) : s.vendorChanges),
+          ],
+        }));
       } else {
         // The changelog text hasn't moved since the last time ANY repo
         // checked it — that's expected, since the snapshot (and the one
@@ -74,9 +104,15 @@ export async function POST(request) {
         continue;
       }
 
-      const alreadyShipped = Object.values(getState().pullRequests).some(
-        (pr) => pr.changeId === vendorChange.id && pr.repoId === repoId
-      );
+      // Skipped when forced: a forced run is an explicit "do it again", and
+      // the reuse branch above can hand back a stored change this repo has
+      // already shipped a pull request for — which would stop the forced run
+      // dead, exactly the thing force exists to avoid.
+      const alreadyShipped =
+        !forced &&
+        Object.values(getState().pullRequests).some(
+          (pr) => pr.changeId === vendorChange.id && pr.repoId === repoId
+        );
       if (alreadyShipped) {
         results.push({ vendor: vendor.name, outcome: "already-shipped", change: vendorChange });
         continue;
