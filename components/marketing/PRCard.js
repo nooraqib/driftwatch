@@ -7,7 +7,7 @@ export default function PRCard() {
 
       <div className="flex items-center justify-between gap-3 border-b border-mkt-line px-4 py-3">
         <span className="min-w-0 truncate font-mono text-xs text-mkt-muted">
-          driftwatch/stripe-charges-create <span className="text-mkt-muted/60">→</span> main
+          driftwatch/stripe-paymentIntents-create <span className="text-mkt-muted/60">→</span> main
         </span>
         <span className="shrink-0 rounded-full border border-mkt-warn/40 bg-mkt-warn/10 px-2 py-0.5 font-mono text-[11px] text-mkt-warn">
           HIGH
