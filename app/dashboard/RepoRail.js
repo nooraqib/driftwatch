@@ -6,7 +6,7 @@ function statusDot(status) {
   return "bg-mkt-muted/30";
 }
 
-export default function RepoRail({ repos, integrationsByRepo, selectedRepoId, onSelect, onConnectClick, onDisconnect }) {
+export default function RepoRail({ repos, integrationsByRepo, selectedRepoId, onSelect, onConnectClick, onDisconnect, onRescan }) {
   const connected = repos.filter((r) => r.connected);
 
   return (
@@ -41,6 +41,14 @@ export default function RepoRail({ repos, integrationsByRepo, selectedRepoId, on
                           {repo.scanStatus === "scanning" ? "scanning..." : `${count} call site${count === 1 ? "" : "s"}`}
                         </span>
                       </span>
+                    </button>
+                    <button
+                      onClick={() => onRescan(repo.fullName)}
+                      disabled={repo.scanStatus === "scanning"}
+                      title="Re-scan this repo's source to pick up files changed since it was last connected"
+                      className="shrink-0 rounded-md border border-mkt-line px-2 py-1 font-mono text-[11px] text-mkt-muted transition-colors hover:border-mkt-muted/40 hover:bg-mkt-surface hover:text-mkt-text active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Rescan
                     </button>
                     <button
                       onClick={() => onDisconnect(repo.fullName)}
