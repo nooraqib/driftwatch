@@ -1,11 +1,29 @@
 import { NextResponse } from "next/server";
 
+// Behind a proxy request.url is the container's internal origin, so prefer
+// the public callback URL, then forwarded headers, then url.origin.
+function getAppUrl(request, url) {
+  if (process.env.GITHUB_CALLBACK_URL) {
+    try {
+      return new URL(process.env.GITHUB_CALLBACK_URL).origin;
+    } catch {}
+  }
+
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  if (forwardedHost) {
+    const proto = request.headers.get("x-forwarded-proto") || "https";
+    return `${proto}://${forwardedHost}`;
+  }
+
+  return url.origin;
+}
+
 export async function GET(request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const cookieState = request.cookies.get("gh_oauth_state")?.value;
-  const appUrl = url.origin;
+  const appUrl = getAppUrl(request, url);
 
   if (!code) {
     return NextResponse.redirect(
