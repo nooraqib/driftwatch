@@ -20,7 +20,7 @@ const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TO
 async function sendOrderConfirmation(toNumber, orderId) {
   return client.messages.create({
     to: toNumber,
-    from: process.env.TWILIO_FROM_NUMBER,
+    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
     body: \`Your order \${orderId} has been confirmed.\`,
   });
 }

@@ -26,11 +26,11 @@ const hardcodedVendorChange = {
   vendor: "Twilio",
   breaking: true,
   severity: "high",
-  summary: "client.messages.create is deprecated in favor of client.messages.createV2",
+  summary: "client.messages.create requires messagingServiceSid instead of from",
   affectedSymbols: ["client.messages.create", "messages.create"],
   migration:
-    "Replace client.messages.create({ to, from, body }) calls with client.messages.createV2({ to, from, body }). Keep the function's external behavior and exported names the same.",
-  sourceLine: "- Removed support for `client.messages.create()`. Use `client.messages.createV2()` instead.",
+    "Update client.messages.create() calls to pass messagingServiceSid instead of from.",
+  sourceLine: "- Updated client.messages.create() to require messagingServiceSid instead of from.",
   deadline: "2026-12-01",
   sourceUrl: process.env.TWILIO_SPEC_URL,
 };
