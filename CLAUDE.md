@@ -33,7 +33,7 @@ the affected symbols. See `lib/store.js`.
 
 - Next.js App Router, JavaScript (not TypeScript), Tailwind v4
 - `@octokit/rest` for all GitHub writes
-- `@google/generative-ai`, model **`gemini-flash-latest`** (see note below)
+- `@google/generative-ai`, model **`gemini-flash-latest`** by default, overridable via `GEMINI_MODEL` (see note below)
 - Storage: one JSON file in `os.tmpdir()` + an in-memory cache, via
   `lib/store.js`'s `getState()`/`setState()`. No database. This is meant to
   be swapped for Postgres later without touching callers.
@@ -45,11 +45,18 @@ the affected symbols. See `lib/store.js`.
 
 The original spec called for `gemini-2.5-flash`. That model returns a 404
 ("no longer available to new users") for the API key in use, even though it
-still appears in `ListModels`. Both `lib/detect.js` and `lib/patch.js` use
-`gemini-flash-latest` instead — the alias Google points at its current
+still appears in `ListModels`. Both `lib/detect.js` and `lib/patch.js` default
+to `gemini-flash-latest` instead — the alias Google points at its current
 recommended flash model, chosen specifically so this doesn't silently break
 again if the pinned version gets deprecated. Same cost/latency tier, same
 budget assumptions.
+
+The model name is overridable via the `GEMINI_MODEL` env var (falls back to
+`gemini-flash-latest` if unset) so it can be swapped at runtime — e.g. when
+`gemini-flash-latest`'s current underlying model (`gemini-3.6-flash` as of
+this writing) hits its free-tier daily quota, without a code change. Each
+model name is its own separate quota bucket, so switching immediately
+unblocks testing. `.env.local` currently sets it to `gemini-flash-lite-latest`.
 
 ## Gemini call budget
 

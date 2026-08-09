@@ -9,7 +9,23 @@ export async function GET(request) {
     const repoId = new URL(request.url).searchParams.get("repoId");
     if (!repoId) {
       const state = getState();
-      return NextResponse.json({ prs: Object.values(state.pullRequests) });
+      const records = Object.values(state.pullRequests);
+
+      // Our own record only ever says "open" (set once, at creation time).
+      // Fetch each PR's live state from GitHub so merged/closed shows up.
+      const enriched = await Promise.all(
+        records.map(async (record) => {
+          try {
+            const [prOwner, prRepo] = record.repoId.split("/");
+            const live = await ghFetch(`/repos/${prOwner}/${prRepo}/pulls/${record.number}`);
+            return { ...record, state: live.state, draft: live.draft, merged: Boolean(live.merged_at) };
+          } catch {
+            return record;
+          }
+        })
+      );
+
+      return NextResponse.json({ prs: enriched });
     }
 
     const [owner, repo] = repoId.split("/");
